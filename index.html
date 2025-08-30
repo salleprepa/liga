@@ -734,7 +734,8 @@
 
                             if (teamIds.length > 0) {
                                 const playersQuery = query(collection(db, `artifacts/${appId}/public/data/players`), where("teamId", "in", teamIds));
-                                const playersSnapshot = await getDocs(playersSnapshot.docs.map(d => deleteDoc(d.ref)));
+                                const playersSnapshot = await getDocs(playersQuery);
+                                await Promise.all(playersSnapshot.docs.map(d => deleteDoc(d.ref)));
                             }
                             await Promise.all(teamsSnapshot.docs.map(d => deleteDoc(d.ref)));
 
@@ -781,7 +782,7 @@
                 setIsLoading(true);
                 const { db } = window.firebaseApp;
                 const { collection, doc, setDoc } = window.firebaseModules;
-                const leagueNames = ['1ro Varonil', '1ro Femenil', '3ro Varonil', '3ro Femenil', 'Areas Varonil', 'Areas Femenil'];
+                const leagueNames = ['1ro A', '1ro B', '3ro A', '3ro B', 'QB', 'FM', 'SCH'];
                 const tournamentId = crypto.randomUUID();
                 const newTournament = { id: tournamentId, name: tournamentName, sport: selectedSport, createdAt: new Date().toISOString() };
 
@@ -1038,7 +1039,7 @@
                     .sort((a, b) => {
                         const leagueA = getLeagueName(a.leagueId);
                         const leagueB = getLeagueName(b.leagueId);
-                        const leagueOrder = ['1ro Varonil', '1ro Femenil', '3ro Varonil', '3ro Femenil', 'Areas Varonil', 'Areas Femenil'];
+                        const leagueOrder = ['1ro A', '1ro B', '3ro A', '3ro B', 'QB', 'FM', 'SCH'];
                         return leagueOrder.indexOf(leagueA) - leagueOrder.indexOf(leagueB);
                     });
 
