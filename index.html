@@ -55,12 +55,12 @@
             return <span className="mr-2 text-2xl">{icons[sport] || ''}</span>;
         };
 
-        const PAISES = ['Alemania', 'Argentina', 'Australia', 'Brasil', 'Canadá', 'Chile', 'China', 'Colombia', 'Egipto', 'España', 'Estados Unidos', 'Francia', 'India', 'Italia', 'Japón', 'México', 'Nigeria', 'Países Bajos', 'Perú', 'Portugal', 'Reino Unido', 'Rusia', 'Sudáfrica', 'Turquía', 'Uruguay', 'Venezuela'];
+        const PAISES = ['Alemania', 'Argentina', 'Australia', 'Brasil', 'Canadá', 'Chile', 'China', 'Colombia', 'Corea del Sur', 'Egipto', 'España', 'Estados Unidos', 'Francia', 'India', 'Italia', 'Japón', 'México', 'Nigeria', 'Países Bajos', 'Perú', 'Portugal', 'Reino Unido', 'Rusia', 'Sudáfrica', 'Suecia', 'Turquía', 'Uruguay', 'Venezuela'];
         const COUNTRY_FLAGS = {
             'Alemania': 'de', 'Argentina': 'ar', 'Australia': 'au', 'Brasil': 'br', 'Canadá': 'ca', 'Chile': 'cl', 'China': 'cn',
-            'Colombia': 'co', 'Egipto': 'eg', 'España': 'es', 'Estados Unidos': 'us', 'Francia': 'fr', 'India': 'in', 'Italia': 'it',
+            'Colombia': 'co', 'Corea del Sur': 'kr', 'Egipto': 'eg', 'España': 'es', 'Estados Unidos': 'us', 'Francia': 'fr', 'India': 'in', 'Italia': 'it',
             'Japón': 'jp', 'México': 'mx', 'Nigeria': 'ng', 'Países Bajos': 'nl', 'Perú': 'pe', 'Portugal': 'pt',
-            'Reino Unido': 'gb', 'Rusia': 'ru', 'Sudáfrica': 'za', 'Turquía': 'tr', 'Uruguay': 'uy', 'Venezuela': 've'
+            'Reino Unido': 'gb', 'Rusia': 'ru', 'Sudáfrica': 'za', 'Suecia': 'se', 'Turquía': 'tr', 'Uruguay': 'uy', 'Venezuela': 've'
         };
         const getFlagUrl = (countryName) => {
             const code = COUNTRY_FLAGS[countryName];
