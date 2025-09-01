@@ -975,6 +975,110 @@
                 }
             };
 
+            const handleExportData = () => {
+                if (!selectedTournamentId) {
+                    showMessage("Por favor, selecciona un torneo para exportar.");
+                    return;
+                }
+
+                const tournament = tournaments.find(t => t.id === selectedTournamentId);
+                if (!tournament) {
+                    showMessage("No se encontró el torneo seleccionado.");
+                    return;
+                }
+
+                const dataToExport = {
+                    tournament,
+                    leagues: visibleLeagues,
+                    teams: visibleTeams,
+                    players: visiblePlayers,
+                    matches: visibleMatches,
+                };
+
+                const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+                    JSON.stringify(dataToExport, null, 2)
+                )}`;
+                const link = document.createElement("a");
+                link.href = jsonString;
+                link.download = `backup-${tournament.name.replace(/ /g, '_')}-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                showMessage("Exportación completada.");
+            };
+
+            const handleImportData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.tournament || !data.leagues || !data.teams || !data.players || !data.matches) {
+                            showMessage("El archivo de backup no tiene el formato correcto.");
+                            return;
+                        }
+
+                        if (!confirm(`¿Estás seguro de que quieres sobreescribir los datos del torneo '${tournaments.find(t => t.id === selectedTournamentId)?.name}' con los datos del archivo? Esta acción es irreversible.`)) {
+                            if (event.target) event.target.value = null;
+                            return;
+                        }
+
+                        setIsLoading(true);
+
+                        const { db } = window.firebaseApp;
+                        const { collection, query, where, getDocs, doc, deleteDoc, setDoc } = window.firebaseModules;
+
+                        const leaguesQuery = query(collection(db, `artifacts/${appId}/public/data/leagues`), where("tournamentId", "==", selectedTournamentId));
+                        const leaguesSnapshot = await getDocs(leaguesQuery);
+                        const leagueIds = leaguesSnapshot.docs.map(d => d.id);
+
+                        if (leagueIds.length > 0) {
+                            const teamsQuery = query(collection(db, `artifacts/${appId}/public/data/teams`), where("leagueId", "in", leagueIds));
+                            const teamsSnapshot = await getDocs(teamsQuery);
+                            const teamIds = teamsSnapshot.docs.map(d => d.id);
+
+                            if (teamIds.length > 0) {
+                                const playersQuery = query(collection(db, `artifacts/${appId}/public/data/players`), where("teamId", "in", teamIds));
+                                const playersSnapshot = await getDocs(playersQuery);
+                                await Promise.all(playersSnapshot.docs.map(d => deleteDoc(d.ref)));
+                            }
+                            await Promise.all(teamsSnapshot.docs.map(d => deleteDoc(d.ref)));
+
+                            const matchesQuery = query(collection(db, `artifacts/${appId}/public/data/matches`), where("leagueId", "in", leagueIds));
+                            const matchesSnapshot = await getDocs(matchesQuery);
+                            await Promise.all(matchesSnapshot.docs.map(d => deleteDoc(d.ref)));
+                        }
+                        
+                        await Promise.all(leaguesSnapshot.docs.map(d => deleteDoc(d.ref)));
+
+                        const importedLeagues = data.leagues.map(l => ({...l, tournamentId: selectedTournamentId}));
+                        const importedTeams = data.teams;
+                        const importedPlayers = data.players;
+                        const importedMatches = data.matches;
+
+                        const promises = [];
+                        importedLeagues.forEach(l => promises.push(setDoc(doc(db, `artifacts/${appId}/public/data/leagues`, l.id), l)));
+                        importedTeams.forEach(t => promises.push(setDoc(doc(db, `artifacts/${appId}/public/data/teams`, t.id), t)));
+                        importedPlayers.forEach(p => promises.push(setDoc(doc(db, `artifacts/${appId}/public/data/players`, p.id), p)));
+                        importedMatches.forEach(m => promises.push(setDoc(doc(db, `artifacts/${appId}/public/data/matches`, m.id), m)));
+
+                        await Promise.all(promises);
+
+                        showMessage("Importación completada con éxito.");
+
+                    } catch (error) {
+                        console.error("Error importing data:", error);
+                        showMessage("Error al importar los datos. Asegúrate de que el archivo es un backup válido.");
+                    } finally {
+                        setIsLoading(false);
+                        if (event.target) {
+                            event.target.value = null;
+                        }
+                    }
+                };
+                reader.readAsText(file);
+            };
+
             const urlToB64 = (url) => fetch(url).then(res => res.blob()).then(blob => new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result);
@@ -1198,6 +1302,15 @@
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-2xl"><SportIcon sport={selectedSport} /></div>
                             </div>
                             <button onClick={createLeaguesAndTeams} className="btn-primary flex items-center"><PlusIcon className="inline-block w-5 h-5 mr-2" />Crear Torneo</button>
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg space-y-4 border-t-4 border-[#101097]">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Copia de Seguridad</h3>
+                        <p className="text-gray-600 dark:text-gray-300">Exporta o importa todos los datos del torneo actual (ligas, equipos, jugadores, partidos).</p>
+                        <div className="flex space-x-4">
+                            <button onClick={handleExportData} className="btn-primary">Exportar Datos</button>
+                            <button onClick={() => document.getElementById('import-file-input').click()} className="btn-primary">Importar Datos</button>
+                            <input type="file" id="import-file-input" accept=".json" style={{ display: 'none' }} onChange={handleImportData} />
                         </div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg space-y-4 border-t-4 border-[#101097]">
